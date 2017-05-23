@@ -18,7 +18,7 @@ namespace WebApi_AWS_Starter.DataAccess
     }    
     public interface IPatientDataAccess
     {
-        Task<PatientNameCache> CreatePatientNameCache();
+        Task<List<string>> CreatePatientNameCache();
         Task<PatientDetails> GetPatientAsync(string Name, string ID);
         Task<List<PatientInfo>> GetPatientInfoAsync(string Name);
         string SetPatient();
@@ -32,10 +32,10 @@ namespace WebApi_AWS_Starter.DataAccess
         {
             _log=log;
         }
-        public async Task<PatientNameCache> CreatePatientNameCache()
+        public async Task<List<string>> CreatePatientNameCache()
         {
-            PatientNameCache _PatientNameCache= new PatientNameCache();
-            
+            //PatientNameCache _PatientNameCache= new PatientNameCache();
+            List<string> _PatientNameCache = null;
             try
             {
                 var dynamoConfig = new AmazonDynamoDBConfig(); 
@@ -56,10 +56,10 @@ namespace WebApi_AWS_Starter.DataAccess
                     var dynamoResponse = dynamoClient.ScanAsync(dynamoRequest,default(CancellationToken));
                     if(dynamoResponse.Result.Items.Count!=0)
                     {
-                        _PatientNameCache.PatientNames= new List<string>();
+                        _PatientNameCache = new List<string>();
                         foreach(Dictionary<string, AttributeValue> dynamoItem in dynamoResponse.Result.Items)
                         {
-                            _PatientNameCache.PatientNames.Add(Convert.ToString(dynamoItem["Name"].S));
+                            _PatientNameCache.Add(Convert.ToString(dynamoItem["Name"].S));
                         }
                     }
                     else

@@ -89,12 +89,12 @@ namespace WebApi_AWS_Starter.Controllers
             /// <summary>
             /// This method returns a JSON array having all patient names
             /// </summary>
-            /// <returns>PatientNameCache for all Patients</returns>
+            /// <returns>Names of all Patients</returns>
             [HttpGet]
-            [Produces(typeof(PatientNameCache))]
+            [Produces(typeof(List<string>))]
             public async Task<IActionResult> GetPatientNamesAsync()
             {
-                var _patientNames= (PatientNameCache)null;
+                var _patientNames= (List<string>)null;
                 var _cacheKey = "PatentCache";
                 var _patientCache=_distributedCache.GetString(_cacheKey);
                 if (!string.IsNullOrEmpty(Convert.ToString(_patientCache)))
