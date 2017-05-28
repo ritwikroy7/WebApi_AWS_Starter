@@ -32,10 +32,10 @@ namespace WebApi_AWS_Starter.Controllers
             /// <param name="ID">Unique Patient ID</param>
             /// <returns>A Single Patient Record</returns>
             [HttpGet("ByNameAndID")]
-            [Produces(typeof(PatientDetails))]
+            [Produces(typeof(Prescription))]
             public async Task<IActionResult> GetPatientAsync(string Name, string ID)
             {
-                var _patient=(PatientDetails)null;
+                var _patient=(Prescription)null;
                 try
                 {
                     if (String.IsNullOrWhiteSpace(Name) || String.IsNullOrWhiteSpace(ID))

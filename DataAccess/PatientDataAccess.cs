@@ -19,7 +19,7 @@ namespace WebApi_AWS_Starter.DataAccess
     public interface IPatientDataAccess
     {
         Task<List<string>> CreatePatientNameCache();
-        Task<PatientDetails> GetPatientAsync(string Name, string ID);
+        Task<Prescription> GetPatientAsync(string Name, string ID);
         Task<List<PatientInfo>> GetPatientInfoAsync(string Name);
         string SetPatient();
 
@@ -90,10 +90,10 @@ namespace WebApi_AWS_Starter.DataAccess
             }
             return _PatientNameCache;
         }
-        public async Task<PatientDetails> GetPatientAsync(string Name, string ID)
+        public async Task<Prescription> GetPatientAsync(string Name, string ID)
         {
 
-            PatientDetails _objPatient = new PatientDetails();
+            Prescription _objPatient = new Prescription();
             
             try
             {
@@ -114,10 +114,10 @@ namespace WebApi_AWS_Starter.DataAccess
 
                     if(dynamoResponse.Item.Count!=0)
                     {
-                        _objPatient.Name=Convert.ToString(dynamoResponse.Item["Name"].S);
-                        _objPatient.ID=Convert.ToString(dynamoResponse.Item["ID"].S);
-                        _objPatient.Age=Convert.ToInt32(dynamoResponse.Item["Age"].N);
-                        _objPatient.ContactNumber=Convert.ToString(dynamoResponse.Item["ContactNumber"].S);
+                        _objPatient._PatientInfo.Name=Convert.ToString(dynamoResponse.Item["Name"].S);
+                        _objPatient._PatientInfo.ID=Convert.ToString(dynamoResponse.Item["ID"].S);
+                        _objPatient._PatientInfo.Age=Convert.ToInt32(dynamoResponse.Item["Age"].N);
+                        _objPatient._PatientInfo.ContactNumber=Convert.ToString(dynamoResponse.Item["ContactNumber"].S);
                     }
                 }
             }

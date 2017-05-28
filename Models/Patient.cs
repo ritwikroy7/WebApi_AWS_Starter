@@ -3,12 +3,10 @@ using System.Collections.Generic;
 
 namespace WebApi_AWS_Starter.Models
 {
-    public class PatientDetails : PatientInfo
+    public class Prescription
     {
-
-        public string Title { get; set; }
-        public string Email { get; set; }
-        public _Investigations Investigations { get; set; }
+        public PatientInfo _PatientInfo { get; set; }
+        public _Investigations _Investigations { get; set; }
         public _Recommendations _Recommendations { get; set; }		
     }
 
@@ -16,6 +14,8 @@ namespace WebApi_AWS_Starter.Models
     {
         public string Name { get; set; }
         public string ID { get; set; }
+        public string Title { get; set; }
+        public string Email { get; set; }
         public int Age { get; set; }
         public string ContactNumber { get; set; }
         public string BloodGroup { get; set; }
