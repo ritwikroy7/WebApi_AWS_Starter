@@ -8,6 +8,7 @@ using WebApi_AWS_Starter.DataAccess;
 using WebApi_AWS_Starter.Models;
 using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
+using Microsoft.AspNetCore.Authorization;
 
 namespace WebApi_AWS_Starter.Controllers
 {
@@ -31,11 +32,12 @@ namespace WebApi_AWS_Starter.Controllers
             /// <param name="Name">Patient Name</param>
             /// <param name="ID">Unique Patient ID</param>
             /// <returns>A Single Patient Record</returns>
+            [Authorize]
             [HttpGet("ByNameAndID")]
-            [Produces(typeof(Prescription))]
+            [Produces(typeof(PatientInfo))]
             public async Task<IActionResult> GetPatientAsync(string Name, string ID)
             {
-                var _patient=(Prescription)null;
+                var _patient=(PatientInfo)null;
                 try
                 {
                     if (String.IsNullOrWhiteSpace(Name) || String.IsNullOrWhiteSpace(ID))
@@ -61,6 +63,7 @@ namespace WebApi_AWS_Starter.Controllers
             /// </summary>
             /// <param name="Name">Patient Name</param>
             /// <returns>Patient Record(s)</returns>
+            [Authorize]
             [HttpGet("ByName")]
             [Produces(typeof(PatientInfo))]
             public async Task<IActionResult> GetPatientInfoAsync(string Name)
@@ -90,6 +93,7 @@ namespace WebApi_AWS_Starter.Controllers
             /// This method returns a JSON array having all patient names
             /// </summary>
             /// <returns>Names of all Patients</returns>
+            [Authorize]
             [HttpGet]
             [Produces(typeof(List<string>))]
             public async Task<IActionResult> GetPatientNamesAsync()
@@ -120,6 +124,63 @@ namespace WebApi_AWS_Starter.Controllers
                     }
                     return Ok(_patientNames);
                 }
+            }
+
+            // POST api/dynamo/SavePrescription
+            /// <summary>
+            /// This method saves a Prescription to the database
+            /// </summary>
+            /// <returns>No Content</returns>
+            [HttpPost("SavePrescription")]
+            public async Task<IActionResult> SavePrescriptionAsync([FromBody]Prescription _prescription)
+            {
+                string prescription=null;
+                try
+                {
+                    prescription = JsonConvert.SerializeObject(_prescription);
+                }
+                catch(JsonException jEx)
+                {
+                    return StatusCode(500, jEx.Message);
+                }
+                try
+                {
+                    await _patientDataAccess.SavePrescriptionAsync(prescription);
+                }
+                catch (DataAccessException DAX)
+                {
+                    return StatusCode(500, DAX.Message);
+                }
+                catch (Exception EX)
+                {
+                    return StatusCode(500, EX.Message);
+                }
+                return NoContent();
+            }
+
+            // GET api/dynamo/GetPrescription/{ID}
+            /// <summary>
+            /// This method retrieves a Prescription from the database by the Patient ID
+            /// </summary>
+            /// <returns>A Prescription Object</returns>
+            [HttpGet("{ID}")]
+            [Produces(typeof(Prescription))]
+            public async Task<IActionResult> GetPrescription(string ID)
+            {
+                var prescription = (Prescription)null;
+                try
+                {                  
+                    prescription=await _patientDataAccess.GetPrescription(ID);
+                }
+                catch (DataAccessException DAX)
+                {
+                    return NotFound(DAX.Message);
+                }
+                catch (Exception EX)
+                {
+                    return NotFound(EX.Message);
+                }
+                return Ok(prescription);
             }
     }
 }

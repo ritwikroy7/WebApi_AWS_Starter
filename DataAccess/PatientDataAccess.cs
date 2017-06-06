@@ -6,8 +6,10 @@ using Amazon.Runtime;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Amazon.DynamoDBv2.Internal;
+using Amazon.DynamoDBv2.DocumentModel;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace WebApi_AWS_Starter.DataAccess
 {
@@ -19,9 +21,11 @@ namespace WebApi_AWS_Starter.DataAccess
     public interface IPatientDataAccess
     {
         Task<List<string>> CreatePatientNameCache();
-        Task<Prescription> GetPatientAsync(string Name, string ID);
+        Task<PatientInfo> GetPatientInfoByNameAndIDAsync(string Name, string ID);
         Task<List<PatientInfo>> GetPatientInfoAsync(string Name);
-        string SetPatient();
+        string SetPatientInfoAsync();
+        Task SavePrescriptionAsync(string prescription);
+        Task<Prescription> GetPrescriptionAsync(string ID);
 
     }
     public class PatientDataAccess : IPatientDataAccess
@@ -90,10 +94,10 @@ namespace WebApi_AWS_Starter.DataAccess
             }
             return _PatientNameCache;
         }
-        public async Task<Prescription> GetPatientAsync(string Name, string ID)
+        public async Task<PatientInfo> GetPatientInfoByNameAndIDAsync(string Name, string ID)
         {
 
-            Prescription _objPatient = new Prescription();
+            PatientInfo _objPatient = new PatientInfo();
             
             try
             {
@@ -114,10 +118,10 @@ namespace WebApi_AWS_Starter.DataAccess
 
                     if(dynamoResponse.Item.Count!=0)
                     {
-                        _objPatient._PatientInfo.Name=Convert.ToString(dynamoResponse.Item["Name"].S);
-                        _objPatient._PatientInfo.ID=Convert.ToString(dynamoResponse.Item["ID"].S);
-                        _objPatient._PatientInfo.Age=Convert.ToInt32(dynamoResponse.Item["Age"].N);
-                        _objPatient._PatientInfo.ContactNumber=Convert.ToString(dynamoResponse.Item["ContactNumber"].S);
+                        _objPatient.Name=Convert.ToString(dynamoResponse.Item["Name"].S);
+                        _objPatient.ID=Convert.ToString(dynamoResponse.Item["ID"].S);
+                        _objPatient.Age=Convert.ToInt32(dynamoResponse.Item["Age"].N);
+                        _objPatient.ContactNumber=Convert.ToString(dynamoResponse.Item["ContactNumber"].S);
                     }
                 }
             }
@@ -148,7 +152,7 @@ namespace WebApi_AWS_Starter.DataAccess
         {
 
             List<PatientInfo> _lstPatient = new List<PatientInfo>();
-            
+            QueryResponse dynamoResponse=null;
             try
             {
                 var dynamoConfig = new AmazonDynamoDBConfig(); 
@@ -167,11 +171,11 @@ namespace WebApi_AWS_Starter.DataAccess
                             {":v_Name", new AttributeValue { S =  Name }}}
                     };
 
-                    var dynamoResponse = dynamoClient.QueryAsync(dynamoRequest,default(CancellationToken));
+                     dynamoResponse = await dynamoClient.QueryAsync(dynamoRequest,default(CancellationToken));
 
-                    if(dynamoResponse.Result.Items.Count!=0)
+                    if(dynamoResponse.Items.Count!=0)
                     {
-                        foreach(Dictionary<string, AttributeValue> dynamoItem in dynamoResponse.Result.Items)
+                        foreach(Dictionary<string, AttributeValue> dynamoItem in dynamoResponse.Items)
                         {
                             PatientInfo _objPatient = new PatientInfo();
                             _objPatient.Name=Convert.ToString(dynamoItem["Name"].S);
@@ -210,7 +214,7 @@ namespace WebApi_AWS_Starter.DataAccess
             }
             return _lstPatient;
         }
-        public string SetPatient()
+        public string SetPatientInfoAsync()
         {
             string PatientID=null;
 
@@ -236,6 +240,91 @@ namespace WebApi_AWS_Starter.DataAccess
             }
 
             return PatientID;
+        }
+
+        public async Task SavePrescriptionAsync(string prescription)
+        {
+            Document pResponse=null;
+            //var PatientJSON = "{\n  \"Age\": 30,\n  \"BloodGroup\": \"A+\",\n  \"Date\": \"05/12/2017\",\n  \"Findings\": {\n    \"ChiefComplaints\": [\n      \"Complaint 1\",\n      \"Complaint 2\"\n    ],\n    \"Examinations\": [\n      {\n        \"Items\": [\n          \"Vulva - XXXXXXX\"\n        ],\n        \"Type\": \"P/S\"\n      },\n      {\n        \"Items\": [\n          \"Swellings - XXXXXXX\",\n          \"Hernias - XXXXXXX\"\n        ],\n        \"Type\": \"P/A\"\n      },\n      {\n        \"Items\": [\n          \"Size\",\n          \"Tumors\"\n        ],\n        \"Type\": \"P/V\"\n      },\n      {\n        \"Items\": [\n          \"Pallor - XXXXXXX\",\n          \"Glands - XXXXXXX\"\n        ],\n        \"Type\": \"Misc\"\n      }\n    ],\n    \"FamilyHistory\": [\n      \"Cervical Cancer - Grandmother\",\n      \"H/O Diabetes\"\n    ],\n    \"MedicalHistory\": [\n      \"Item 1\",\n      \"Item 2\"\n    ],\n    \"PersonalHistory\": [\n      \"Two failed preganancies\",\n      \"LMP: XXXXXXX\"\n    ]\n  },\n  \"FollowUp\": [\n    \"XXXXXXX\",\n    \"YYYYYYY\"\n  ],\n  \"ID\": \"PQRS1234XYZ\",\n  \"Name\": \"Anna Belle\",\n  \"Parity\": \"XXXXXX\",\n  \"PatientResponse\": [\n    \"Item 1\"\n  ],\n  \"Tests\": [\n    {\n      \"Items\": [\n        \"ACL\",\n        \"Haemogram\",\n        \"Uric Acid\"\n      ],\n      \"Type\": \"Blood\"\n    },\n    {\n      \"Items\": [\n        \"Whole Abdomen\",\n        \"TVS\"\n      ],\n      \"Type\": \"USG Pelvis\"\n    },\n    {\n      \"Items\": [\n        \"Chest X-Ray\",\n        \"MRI\"\n      ],\n      \"Type\": \"Misc\"\n    }\n  ],\n  \"Title\": \"Mrs\"\n}";
+            try
+            {
+                var dynamoConfig = new AmazonDynamoDBConfig(); 
+                dynamoConfig.RegionEndpoint=Amazon.RegionEndpoint.USWest2;
+                using (var dynamoClient = new AmazonDynamoDBClient(dynamoConfig))
+                {
+                    var pTable = Table.LoadTable(dynamoClient,"PrescriptionDetails");
+                    var pItem = Document.FromJson(prescription);
+                    pResponse = await pTable.PutItemAsync(pItem,default(CancellationToken));
+                }
+            }
+            catch (AmazonDynamoDBException dEx)
+            {
+                _log.LogError("Amazon DynamoDB Exception: "+dEx.Message);
+                throw new DataAccessException("An Error Occured While Saving Patient Info In Database"); 
+            }
+            catch (AmazonServiceException aEx)
+            {
+                _log.LogError("Amazon Service Exception: "+aEx.Message);
+                throw new DataAccessException("An Error Occured While Saving Patient Info In Database");
+            }
+            catch (AmazonClientException cEx)
+            {
+                _log.LogError("Amazon Client Exception: "+cEx.Message);
+                throw new DataAccessException("An Error Occured While Saving Patient Info In Database");
+            }
+            catch (Exception eEx)
+            {
+                _log.LogError("Unhandled Exception:  "+eEx.Message);
+                throw new DataAccessException("An Unknown Error Occured");
+            }
+            return;
+        }
+        public async Task<Prescription> GetPrescriptionAsync(string ID)
+        {
+            var _prescription = (Document)null;
+            var prescriptionJson = (string)null;
+            Prescription prescription = null;
+            try
+            {
+                var dynamoConfig = new AmazonDynamoDBConfig(); 
+                dynamoConfig.RegionEndpoint=Amazon.RegionEndpoint.USWest2;
+                using (var dynamoClient = new AmazonDynamoDBClient(dynamoConfig))
+                {
+                    var pTable = Table.LoadTable(dynamoClient,"PrescriptionDetails");
+                    _prescription = await pTable.GetItemAsync(ID,default(CancellationToken));
+                    prescriptionJson = _prescription.ToJson();
+                }
+                try
+                {
+                    prescription=JsonConvert.DeserializeObject<Prescription>(prescriptionJson);
+                }
+                catch(JsonException jEx)
+                {
+                    _log.LogError("Json Deserialization Exception: "+jEx.Message);
+                    throw new DataAccessException("An Error Occured While Retrieving Prescription From Database");
+                }
+            }
+            catch (AmazonDynamoDBException dEx)
+            {
+                _log.LogError("Amazon DynamoDB Exception: "+dEx.Message);
+                throw new DataAccessException("An Error Occured While Retrieving Prescription From Database"); 
+            }
+            catch (AmazonServiceException aEx)
+            {
+                _log.LogError("Amazon Service Exception: "+aEx.Message);
+                throw new DataAccessException("An Error Occured While Retrieving Prescription From Database");
+            }
+            catch (AmazonClientException cEx)
+            {
+                _log.LogError("Amazon Client Exception: "+cEx.Message);
+                throw new DataAccessException("An Error Occured While Retrieving Prescription From Database");
+            }
+            catch (Exception eEx)
+            {
+                _log.LogError("Unhandled Exception:  "+eEx.Message);
+                throw new DataAccessException("An Unknown Error Occured");
+            }
+            return prescription;
         }
     }
 }

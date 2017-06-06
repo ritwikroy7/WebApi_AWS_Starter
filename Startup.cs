@@ -61,6 +61,13 @@ namespace WebApi_AWS_Starter
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
             loggerFactory.AddFile("Logs/WebApi_AWS_Starter-{Date}.txt", isJson: true);
+            var options = new JwtBearerOptions
+            {
+                Audience = Configuration["Auth0:ApiIdentifier"],
+                Authority = $"https://{Configuration["Auth0:Domain"]}/"
+            };
+            app.UseJwtBearerAuthentication(options);
+
             app.UseMvc();
             app.UseSwagger();
             app.UseSwaggerUI(c =>
