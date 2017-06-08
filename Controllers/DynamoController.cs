@@ -44,7 +44,7 @@ namespace WebApi_AWS_Starter.Controllers
                     {
                         return BadRequest("Name And ID Cannot Be Blank. Please Supply Both Values.");
                     }                    
-                    _patient=await _patientDataAccess.GetPatientAsync(Name, ID);
+                    _patient=await _patientDataAccess.GetPatientInfoByNameAndIDAsync(Name, ID);
                 }
                 catch (DataAccessException DAX)
                 {
@@ -131,6 +131,7 @@ namespace WebApi_AWS_Starter.Controllers
             /// This method saves a Prescription to the database
             /// </summary>
             /// <returns>No Content</returns>
+            [Authorize]
             [HttpPost("SavePrescription")]
             public async Task<IActionResult> SavePrescriptionAsync([FromBody]Prescription _prescription)
             {
@@ -163,6 +164,7 @@ namespace WebApi_AWS_Starter.Controllers
             /// This method retrieves a Prescription from the database by the Patient ID
             /// </summary>
             /// <returns>A Prescription Object</returns>
+            [Authorize]
             [HttpGet("{ID}")]
             [Produces(typeof(Prescription))]
             public async Task<IActionResult> GetPrescription(string ID)
@@ -170,7 +172,7 @@ namespace WebApi_AWS_Starter.Controllers
                 var prescription = (Prescription)null;
                 try
                 {                  
-                    prescription=await _patientDataAccess.GetPrescription(ID);
+                    prescription=await _patientDataAccess.GetPrescriptionAsync(ID);
                 }
                 catch (DataAccessException DAX)
                 {
@@ -181,6 +183,39 @@ namespace WebApi_AWS_Starter.Controllers
                     return NotFound(EX.Message);
                 }
                 return Ok(prescription);
+            }
+
+            // POST api/dynamo/SetPatient
+            /// <summary>
+            /// This method saves Patient Info to the database
+            /// </summary>
+            /// <returns>No Content</returns>
+            [Authorize]
+            [HttpPost("SetPatient")]
+            public async Task<IActionResult> SetPatientInfoAsync([FromBody]PatientInfo _patientInfo)
+            {
+                string prescription=null;
+                try
+                {
+                    prescription = JsonConvert.SerializeObject(_patientInfo);
+                }
+                catch(JsonException jEx)
+                {
+                    return StatusCode(500, jEx.Message);
+                }
+                try
+                {
+                    await _patientDataAccess.SavePrescriptionAsync(prescription);
+                }
+                catch (DataAccessException DAX)
+                {
+                    return StatusCode(500, DAX.Message);
+                }
+                catch (Exception EX)
+                {
+                    return StatusCode(500, EX.Message);
+                }
+                return NoContent();
             }
     }
 }

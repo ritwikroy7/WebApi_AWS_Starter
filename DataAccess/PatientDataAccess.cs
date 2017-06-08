@@ -23,14 +23,16 @@ namespace WebApi_AWS_Starter.DataAccess
         Task<List<string>> CreatePatientNameCache();
         Task<PatientInfo> GetPatientInfoByNameAndIDAsync(string Name, string ID);
         Task<List<PatientInfo>> GetPatientInfoAsync(string Name);
-        string SetPatientInfoAsync();
+        Task SetPatientInfoAsync(string patientInfo);
         Task SavePrescriptionAsync(string prescription);
         Task<Prescription> GetPrescriptionAsync(string ID);
 
     }
     public class PatientDataAccess : IPatientDataAccess
     {
-        
+        BasicAWSCredentials _dynamoCredentials = new BasicAWSCredentials(
+        accessKey: "AKIAJDN23HACWJQSO5IQ",
+        secretKey: "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");
         private readonly ILogger<PatientDataAccess> _log;
         public PatientDataAccess(ILogger<PatientDataAccess> log)
         {
@@ -42,10 +44,10 @@ namespace WebApi_AWS_Starter.DataAccess
             List<string> _PatientNameCache = null;
             try
             {
-                var dynamoConfig = new AmazonDynamoDBConfig(); 
+                var dynamoConfig = new AmazonDynamoDBConfig();
                 dynamoConfig.RegionEndpoint=Amazon.RegionEndpoint.USWest2;
 
-                using (var dynamoClient = new AmazonDynamoDBClient(dynamoConfig))
+                using (var dynamoClient = new AmazonDynamoDBClient(_dynamoCredentials, dynamoConfig))
                 {
                     var dynamoRequest = new ScanRequest
                     {
@@ -103,7 +105,7 @@ namespace WebApi_AWS_Starter.DataAccess
             {
                 var dynamoConfig = new AmazonDynamoDBConfig(); 
                 dynamoConfig.RegionEndpoint=Amazon.RegionEndpoint.USWest2;
-                using (var dynamoClient = new AmazonDynamoDBClient(dynamoConfig))
+                using (var dynamoClient = new AmazonDynamoDBClient(_dynamoCredentials, dynamoConfig))
                 {
                     var dynamoResponse = await dynamoClient.GetItemAsync(new GetItemRequest
                     {
@@ -157,7 +159,7 @@ namespace WebApi_AWS_Starter.DataAccess
             {
                 var dynamoConfig = new AmazonDynamoDBConfig(); 
                 dynamoConfig.RegionEndpoint=Amazon.RegionEndpoint.USWest2;
-                using (var dynamoClient = new AmazonDynamoDBClient(dynamoConfig))
+                using (var dynamoClient = new AmazonDynamoDBClient(_dynamoCredentials, dynamoConfig))
                 {
                     var dynamoRequest = new QueryRequest
                     {
@@ -214,46 +216,18 @@ namespace WebApi_AWS_Starter.DataAccess
             }
             return _lstPatient;
         }
-        public string SetPatientInfoAsync()
-        {
-            string PatientID=null;
-
-            try
-            {
-
-            }
-            catch (AmazonDynamoDBException dEx)
-            {
-                
-            }
-            catch (AmazonServiceException aEx)
-            {
-
-            }
-            catch (AmazonClientException cEx)
-            {
-
-            }
-            catch (Exception eEx)
-            {
-                
-            }
-
-            return PatientID;
-        }
-
-        public async Task SavePrescriptionAsync(string prescription)
+        public async Task SetPatientInfoAsync(string patientInfo)
         {
             Document pResponse=null;
-            //var PatientJSON = "{\n  \"Age\": 30,\n  \"BloodGroup\": \"A+\",\n  \"Date\": \"05/12/2017\",\n  \"Findings\": {\n    \"ChiefComplaints\": [\n      \"Complaint 1\",\n      \"Complaint 2\"\n    ],\n    \"Examinations\": [\n      {\n        \"Items\": [\n          \"Vulva - XXXXXXX\"\n        ],\n        \"Type\": \"P/S\"\n      },\n      {\n        \"Items\": [\n          \"Swellings - XXXXXXX\",\n          \"Hernias - XXXXXXX\"\n        ],\n        \"Type\": \"P/A\"\n      },\n      {\n        \"Items\": [\n          \"Size\",\n          \"Tumors\"\n        ],\n        \"Type\": \"P/V\"\n      },\n      {\n        \"Items\": [\n          \"Pallor - XXXXXXX\",\n          \"Glands - XXXXXXX\"\n        ],\n        \"Type\": \"Misc\"\n      }\n    ],\n    \"FamilyHistory\": [\n      \"Cervical Cancer - Grandmother\",\n      \"H/O Diabetes\"\n    ],\n    \"MedicalHistory\": [\n      \"Item 1\",\n      \"Item 2\"\n    ],\n    \"PersonalHistory\": [\n      \"Two failed preganancies\",\n      \"LMP: XXXXXXX\"\n    ]\n  },\n  \"FollowUp\": [\n    \"XXXXXXX\",\n    \"YYYYYYY\"\n  ],\n  \"ID\": \"PQRS1234XYZ\",\n  \"Name\": \"Anna Belle\",\n  \"Parity\": \"XXXXXX\",\n  \"PatientResponse\": [\n    \"Item 1\"\n  ],\n  \"Tests\": [\n    {\n      \"Items\": [\n        \"ACL\",\n        \"Haemogram\",\n        \"Uric Acid\"\n      ],\n      \"Type\": \"Blood\"\n    },\n    {\n      \"Items\": [\n        \"Whole Abdomen\",\n        \"TVS\"\n      ],\n      \"Type\": \"USG Pelvis\"\n    },\n    {\n      \"Items\": [\n        \"Chest X-Ray\",\n        \"MRI\"\n      ],\n      \"Type\": \"Misc\"\n    }\n  ],\n  \"Title\": \"Mrs\"\n}";
+            
             try
             {
                 var dynamoConfig = new AmazonDynamoDBConfig(); 
                 dynamoConfig.RegionEndpoint=Amazon.RegionEndpoint.USWest2;
-                using (var dynamoClient = new AmazonDynamoDBClient(dynamoConfig))
+                using (var dynamoClient = new AmazonDynamoDBClient(_dynamoCredentials, dynamoConfig))
                 {
-                    var pTable = Table.LoadTable(dynamoClient,"PrescriptionDetails");
-                    var pItem = Document.FromJson(prescription);
+                    var pTable = Table.LoadTable(dynamoClient,"PatientMaster");
+                    var pItem = Document.FromJson(patientInfo);
                     pResponse = await pTable.PutItemAsync(pItem,default(CancellationToken));
                 }
             }
@@ -279,6 +253,44 @@ namespace WebApi_AWS_Starter.DataAccess
             }
             return;
         }
+
+        public async Task SavePrescriptionAsync(string prescription)
+        {
+            Document pResponse=null;
+            //var PatientJSON = "{\n  \"Age\": 30,\n  \"BloodGroup\": \"A+\",\n  \"Date\": \"05/12/2017\",\n  \"Findings\": {\n    \"ChiefComplaints\": [\n      \"Complaint 1\",\n      \"Complaint 2\"\n    ],\n    \"Examinations\": [\n      {\n        \"Items\": [\n          \"Vulva - XXXXXXX\"\n        ],\n        \"Type\": \"P/S\"\n      },\n      {\n        \"Items\": [\n          \"Swellings - XXXXXXX\",\n          \"Hernias - XXXXXXX\"\n        ],\n        \"Type\": \"P/A\"\n      },\n      {\n        \"Items\": [\n          \"Size\",\n          \"Tumors\"\n        ],\n        \"Type\": \"P/V\"\n      },\n      {\n        \"Items\": [\n          \"Pallor - XXXXXXX\",\n          \"Glands - XXXXXXX\"\n        ],\n        \"Type\": \"Misc\"\n      }\n    ],\n    \"FamilyHistory\": [\n      \"Cervical Cancer - Grandmother\",\n      \"H/O Diabetes\"\n    ],\n    \"MedicalHistory\": [\n      \"Item 1\",\n      \"Item 2\"\n    ],\n    \"PersonalHistory\": [\n      \"Two failed preganancies\",\n      \"LMP: XXXXXXX\"\n    ]\n  },\n  \"FollowUp\": [\n    \"XXXXXXX\",\n    \"YYYYYYY\"\n  ],\n  \"ID\": \"PQRS1234XYZ\",\n  \"Name\": \"Anna Belle\",\n  \"Parity\": \"XXXXXX\",\n  \"PatientResponse\": [\n    \"Item 1\"\n  ],\n  \"Tests\": [\n    {\n      \"Items\": [\n        \"ACL\",\n        \"Haemogram\",\n        \"Uric Acid\"\n      ],\n      \"Type\": \"Blood\"\n    },\n    {\n      \"Items\": [\n        \"Whole Abdomen\",\n        \"TVS\"\n      ],\n      \"Type\": \"USG Pelvis\"\n    },\n    {\n      \"Items\": [\n        \"Chest X-Ray\",\n        \"MRI\"\n      ],\n      \"Type\": \"Misc\"\n    }\n  ],\n  \"Title\": \"Mrs\"\n}";
+            try
+            {
+                var dynamoConfig = new AmazonDynamoDBConfig(); 
+                dynamoConfig.RegionEndpoint=Amazon.RegionEndpoint.USWest2;
+                using (var dynamoClient = new AmazonDynamoDBClient(_dynamoCredentials, dynamoConfig))
+                {
+                    var pTable = Table.LoadTable(dynamoClient,"PrescriptionDetails");
+                    var pItem = Document.FromJson(prescription);
+                    pResponse = await pTable.PutItemAsync(pItem,default(CancellationToken));
+                }
+            }
+            catch (AmazonDynamoDBException dEx)
+            {
+                _log.LogError("Amazon DynamoDB Exception: "+dEx.Message);
+                throw new DataAccessException("An Error Occured While Saving Prescription To Database"); 
+            }
+            catch (AmazonServiceException aEx)
+            {
+                _log.LogError("Amazon Service Exception: "+aEx.Message);
+                throw new DataAccessException("An Error Occured While Saving Prescription To Database");
+            }
+            catch (AmazonClientException cEx)
+            {
+                _log.LogError("Amazon Client Exception: "+cEx.Message);
+                throw new DataAccessException("An Error Occured While Saving Prescription To Database");
+            }
+            catch (Exception eEx)
+            {
+                _log.LogError("Unhandled Exception:  "+eEx.Message);
+                throw new DataAccessException("An Unknown Error Occured");
+            }
+            return;
+        }
         public async Task<Prescription> GetPrescriptionAsync(string ID)
         {
             var _prescription = (Document)null;
@@ -288,7 +300,7 @@ namespace WebApi_AWS_Starter.DataAccess
             {
                 var dynamoConfig = new AmazonDynamoDBConfig(); 
                 dynamoConfig.RegionEndpoint=Amazon.RegionEndpoint.USWest2;
-                using (var dynamoClient = new AmazonDynamoDBClient(dynamoConfig))
+                using (var dynamoClient = new AmazonDynamoDBClient(_dynamoCredentials, dynamoConfig))
                 {
                     var pTable = Table.LoadTable(dynamoClient,"PrescriptionDetails");
                     _prescription = await pTable.GetItemAsync(ID,default(CancellationToken));
