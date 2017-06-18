@@ -9,10 +9,13 @@ using WebApi_AWS_Starter.Models;
 using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace WebApi_AWS_Starter.Controllers
 {
     [Route("api/[controller]")]
+    [EnableCors("DynamoPolicy")]
     public class DynamoController : Controller
     {
             private readonly ILogger<DynamoController> _log;
@@ -32,10 +35,10 @@ namespace WebApi_AWS_Starter.Controllers
             /// <param name="Name">Patient Name</param>
             /// <param name="ID">Unique Patient ID</param>
             /// <returns>A Single Patient Record</returns>
-            [Authorize]
+            //[Authorize]
             [HttpGet("ByNameAndID")]
             [Produces(typeof(PatientInfo))]
-            public async Task<IActionResult> GetPatientAsync(string Name, string ID)
+            public async Task<IActionResult> GetPatientInfoAsync(string Name, string ID)
             {
                 var _patient=(PatientInfo)null;
                 try
@@ -63,9 +66,9 @@ namespace WebApi_AWS_Starter.Controllers
             /// </summary>
             /// <param name="Name">Patient Name</param>
             /// <returns>Patient Record(s)</returns>
-            [Authorize]
+            //[Authorize]
             [HttpGet("ByName")]
-            [Produces(typeof(PatientInfo))]
+            [Produces(typeof(List<PatientInfo>))]
             public async Task<IActionResult> GetPatientInfoAsync(string Name)
             {
                 var _lstPatientInfo=(List<PatientInfo>)null;
@@ -93,13 +96,13 @@ namespace WebApi_AWS_Starter.Controllers
             /// This method returns a JSON array having all patient names
             /// </summary>
             /// <returns>Names of all Patients</returns>
-            [Authorize]
+            //[Authorize]
             [HttpGet]
             [Produces(typeof(List<string>))]
             public async Task<IActionResult> GetPatientNamesAsync()
             {
                 var _patientNames= (List<string>)null;
-                var _cacheKey = "PatentCache";
+                var _cacheKey = "PatientCache";
                 var _patientCache=_distributedCache.GetString(_cacheKey);
                 if (!string.IsNullOrEmpty(Convert.ToString(_patientCache)))
                 {
@@ -131,7 +134,7 @@ namespace WebApi_AWS_Starter.Controllers
             /// This method saves a Prescription to the database
             /// </summary>
             /// <returns>No Content</returns>
-            [Authorize]
+            //[Authorize]
             [HttpPost("SavePrescription")]
             public async Task<IActionResult> SavePrescriptionAsync([FromBody]Prescription _prescription)
             {
@@ -164,8 +167,8 @@ namespace WebApi_AWS_Starter.Controllers
             /// This method retrieves a Prescription from the database by the Patient ID
             /// </summary>
             /// <returns>A Prescription Object</returns>
-            [Authorize]
-            [HttpGet("{ID}")]
+            //[Authorize]
+            [HttpGet("GetPrescription/{ID}")]
             [Produces(typeof(Prescription))]
             public async Task<IActionResult> GetPrescription(string ID)
             {
@@ -185,19 +188,19 @@ namespace WebApi_AWS_Starter.Controllers
                 return Ok(prescription);
             }
 
-            // POST api/dynamo/SetPatient
+            // POST api/dynamo/SetPatientInfo
             /// <summary>
             /// This method saves Patient Info to the database
             /// </summary>
             /// <returns>No Content</returns>
-            [Authorize]
-            [HttpPost("SetPatient")]
+            //[Authorize]
+            [HttpPost("SetPatientInfo")]
             public async Task<IActionResult> SetPatientInfoAsync([FromBody]PatientInfo _patientInfo)
             {
-                string prescription=null;
+                string patientInfo=null;
                 try
                 {
-                    prescription = JsonConvert.SerializeObject(_patientInfo);
+                    patientInfo = JsonConvert.SerializeObject(_patientInfo);
                 }
                 catch(JsonException jEx)
                 {
@@ -205,7 +208,7 @@ namespace WebApi_AWS_Starter.Controllers
                 }
                 try
                 {
-                    await _patientDataAccess.SavePrescriptionAsync(prescription);
+                    await _patientDataAccess.SetPatientInfoAsync(patientInfo);
                 }
                 catch (DataAccessException DAX)
                 {
@@ -216,6 +219,168 @@ namespace WebApi_AWS_Starter.Controllers
                     return StatusCode(500, EX.Message);
                 }
                 return NoContent();
+            }
+            // GET api/dynamo/GetDrugList
+            /// <summary>
+            /// This method returns a JSON array having all drug details
+            /// </summary>
+            /// <returns>List of Drug Details</returns>
+            //[Authorize]
+            [HttpGet("GetDrugList")]
+            [Produces(typeof(List<Drug>))]
+            public async Task<IActionResult> GetDrugListAsync()
+            {
+                var _drugList= (List<Drug>)null;
+                var _cacheKey = "DrugCache";
+                var _drugCache=_distributedCache.GetString(_cacheKey);
+                if (!string.IsNullOrEmpty(Convert.ToString(_drugCache)))
+                {
+                    return Ok(_drugCache);
+                }
+                else
+                {
+                    try
+                    {
+                        _drugList = await _patientDataAccess.CreateDrugCache();
+                        var _cacheEntryOptions = new DistributedCacheEntryOptions()
+        .SetAbsoluteExpiration(TimeSpan.FromMinutes(1));
+                        _distributedCache.SetString(_cacheKey, JsonConvert.SerializeObject(_drugList),_cacheEntryOptions);
+                    }
+                    catch (DataAccessException DAX)
+                    {
+                        return NotFound(DAX.Message);
+                    }
+                    catch (Exception EX)
+                    {
+                        return NotFound(EX.Message);
+                    }
+                    return Ok(_drugList);
+                }
+            }
+            // GET api/dynamo/GetTestList
+            /// <summary>
+            /// This method returns a JSON array having all test details
+            /// </summary>
+            /// <returns>List of Test Details</returns>
+            //[Authorize]
+            [HttpGet("GetTestList")]
+            [Produces(typeof(List<_Test>))]
+            public async Task<IActionResult> GetTestListAsync()
+            {
+                var _testList= (List<_Test>)null;
+                var _cacheKey = "TestCache";
+                var _testCache=_distributedCache.GetString(_cacheKey);
+                if (!string.IsNullOrEmpty(Convert.ToString(_testCache)))
+                {
+                    return Ok(_testCache);
+                }
+                else
+                {
+                    try
+                    {
+                        _testList = await _patientDataAccess.CreateTestCache();
+                        var _cacheEntryOptions = new DistributedCacheEntryOptions()
+        .SetAbsoluteExpiration(TimeSpan.FromMinutes(1));
+                        _distributedCache.SetString(_cacheKey, JsonConvert.SerializeObject(_testList),_cacheEntryOptions);
+                    }
+                    catch (DataAccessException DAX)
+                    {
+                        return NotFound(DAX.Message);
+                    }
+                    catch (Exception EX)
+                    {
+                        return NotFound(EX.Message);
+                    }
+                    return Ok(_testList);
+                }
+            }
+            // POST api/dynamo/SaveDrug
+            /// <summary>
+            /// This method saves a Drug to the database
+            /// </summary>
+            /// <returns>No Content</returns>
+            //[Authorize]
+            [HttpPost("SaveDrug")]
+            public async Task<IActionResult> SaveDrugAsync([FromBody]Drug _drug)
+            {
+                string drug=null;
+                try
+                {
+                    drug = JsonConvert.SerializeObject(_drug);
+                }
+                catch(JsonException jEx)
+                {
+                    return StatusCode(500, jEx.Message);
+                }
+                try
+                {
+                    await _patientDataAccess.SaveDrugAsync(drug);
+                }
+                catch (DataAccessException DAX)
+                {
+                    return StatusCode(500, DAX.Message);
+                }
+                catch (Exception EX)
+                {
+                    return StatusCode(500, EX.Message);
+                }
+                return NoContent();
+            }
+            // POST api/dynamo/SaveTest
+            /// <summary>
+            /// This method saves a Test to the database
+            /// </summary>
+            /// <returns>No Content</returns>
+            //[Authorize]
+            [HttpPost("SaveTest")]
+            public async Task<IActionResult> SaveTestAsync([FromBody]_Test _test)
+            {
+                string test=null;
+                try
+                {
+                    test = JsonConvert.SerializeObject(_test);
+                }
+                catch(JsonException jEx)
+                {
+                    return StatusCode(500, jEx.Message);
+                }
+                try
+                {
+                    await _patientDataAccess.SaveTestAsync(test);
+                }
+                catch (DataAccessException DAX)
+                {
+                    return StatusCode(500, DAX.Message);
+                }
+                catch (Exception EX)
+                {
+                    return StatusCode(500, EX.Message);
+                }
+                return NoContent();
+            }
+            // DELETE api/dynamo/DeleteCache
+            /// <summary>
+            /// This method deletes the cache for a given cache key
+            /// </summary>
+            /// <response code="204">No Content</response>
+            //[Authorize]
+            [HttpDelete("DeleteCache")]
+            [ProducesResponseTypeAttribute(204)]
+            public async Task<IActionResult> DeleteCache(string cacheKey)
+            {
+                if(!String.IsNullOrWhiteSpace(cacheKey))
+                {
+                    try
+                    {
+                        _distributedCache.Remove(cacheKey);
+                    }
+                    catch(Exception eEx)
+                    {
+                        return StatusCode(500, eEx.Message);
+                    }
+                    return NoContent();
+                }
+                return BadRequest("cacheKey Cannot Be Empty");
             }
     }
 }

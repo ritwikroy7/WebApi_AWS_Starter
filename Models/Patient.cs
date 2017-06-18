@@ -16,6 +16,7 @@ namespace WebApi_AWS_Starter.Models
         public string Email { get; set; }
         public _Findings Findings { get; set; }
         public List<_Test> Tests { get; set; }
+        public List<_Medication> Medications { get; set; }
         public List<string> FollowUp { get; set; } 			
         public List<string> PatientResponse { get; set; }
     }
@@ -51,18 +52,18 @@ namespace WebApi_AWS_Starter.Models
         public string Type { get; set; }
         public List<string> Items { get; set; }
     }
-    public class _Recommendations
-    {
-        public List<_Test> _Tests { get; set; }
-        public List<_Medication> Medications { get; set; }
-        public List<string> FollowUp { get; set; } 			
-        public List<string> PatientResponse { get; set; }
-        public List<string> Misc { get; set; }
-    }
+    // public class _Recommendations
+    // {
+    //     public List<_Test> _Tests { get; set; }
+    //     public List<_Medication> Medications { get; set; }
+    //     public List<string> FollowUp { get; set; } 			
+    //     public List<string> PatientResponse { get; set; }
+    //     public List<string> Misc { get; set; }
+    // }
     public class _Test
     {
         public string Type { get; set; }
-        public List<string> Items { get; set; }
+        public List<string> SubTypes { get; set; }
     }
     public class Drug
     {

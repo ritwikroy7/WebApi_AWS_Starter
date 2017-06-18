@@ -45,6 +45,15 @@ namespace WebApi_AWS_Starter
                 options.Configuration = connect_Redis;
             });
             services.AddMvc();
+            services.AddCors(options => 
+            {
+                options.AddPolicy("DynamoPolicy", builder =>
+                {
+                    builder.AllowAnyOrigin()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+                });
+            });
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new Info { Title = "Dynamo API", Version = "v1" });
@@ -69,6 +78,7 @@ namespace WebApi_AWS_Starter
             app.UseJwtBearerAuthentication(options);
 
             app.UseMvc();
+            app.UseCors("DynamoPolicy");
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {

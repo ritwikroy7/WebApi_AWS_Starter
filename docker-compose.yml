@@ -1,0 +1,8 @@
+version: '2.1'
+
+services:
+  webapi_aws_starter:
+    image: webapi_aws_starter
+    build: .
+    ports:
+      - 3000:3000

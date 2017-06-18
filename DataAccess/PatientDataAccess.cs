@@ -26,18 +26,23 @@ namespace WebApi_AWS_Starter.DataAccess
         Task SetPatientInfoAsync(string patientInfo);
         Task SavePrescriptionAsync(string prescription);
         Task<Prescription> GetPrescriptionAsync(string ID);
+        Task<List<Drug>> CreateDrugCache();
+        Task<List<_Test>> CreateTestCache();
+        Task SaveTestAsync(string test);
+        Task SaveDrugAsync(string drug);
 
     }
     public class PatientDataAccess : IPatientDataAccess
     {
         BasicAWSCredentials _dynamoCredentials = new BasicAWSCredentials(
-        accessKey: "AKIAJDN23HACWJQSO5IQ",
-        secretKey: "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");
+        accessKey: "",
+        secretKey: "");
         private readonly ILogger<PatientDataAccess> _log;
         public PatientDataAccess(ILogger<PatientDataAccess> log)
         {
             _log=log;
         }
+        //Check For Size Of Data Returned. Do/While / Paging Not Implemented Yet.
         public async Task<List<string>> CreatePatientNameCache()
         {
             //PatientNameCache _PatientNameCache= new PatientNameCache();
@@ -337,6 +342,190 @@ namespace WebApi_AWS_Starter.DataAccess
                 throw new DataAccessException("An Unknown Error Occured");
             }
             return prescription;
+        }
+
+        public async Task<List<Drug>> CreateDrugCache()
+        {
+            List<Drug> DrugCache = new List<Drug>();
+            try
+            {
+                var dynamoConfig = new AmazonDynamoDBConfig(); 
+                dynamoConfig.RegionEndpoint=Amazon.RegionEndpoint.USWest2;
+                using (var dynamoClient = new AmazonDynamoDBClient(_dynamoCredentials, dynamoConfig))
+                {
+                    var pTable = Table.LoadTable(dynamoClient,"DrugMaster");
+                    ScanFilter defScanFilter = new ScanFilter();
+                    Search dynamoSearch = pTable.Scan(defScanFilter);
+                    List<Document> documentList = new List<Document>();
+                    do
+                    {
+                        documentList=await dynamoSearch.GetNextSetAsync(default(CancellationToken));
+                        foreach(var document in documentList)
+                        {
+                            Drug _drug = new Drug();
+                            try
+                            {
+                                _drug=JsonConvert.DeserializeObject<Drug>(document.ToJson());
+                                DrugCache.Add(_drug);
+                            }
+                            catch(JsonException jEx)
+                            {
+                                _log.LogError("Json Deserialization Exception: "+jEx.Message);
+                                throw new DataAccessException("An Error Occured While Retrieving Drug List From Database");
+                            }
+                        }
+                    } while(!dynamoSearch.IsDone);
+                }
+            }
+            catch (AmazonDynamoDBException dEx)
+            {
+                _log.LogError("Amazon DynamoDB Exception: "+dEx.Message);
+                throw new DataAccessException("An Error Occured While Retrieving Drug List From Database"); 
+            }
+            catch (AmazonServiceException aEx)
+            {
+                _log.LogError("Amazon Service Exception: "+aEx.Message);
+                throw new DataAccessException("An Error Occured While Retrieving Drug List From Database");
+            }
+            catch (AmazonClientException cEx)
+            {
+                _log.LogError("Amazon Client Exception: "+cEx.Message);
+                throw new DataAccessException("An Error Occured While Retrieving Drug List From Database");
+            }
+            catch (Exception eEx)
+            {
+                _log.LogError("Unhandled Exception:  "+eEx.Message);
+                throw new DataAccessException("An Unknown Error Occured");
+            }
+            return DrugCache;
+        }
+
+        public async Task<List<_Test>> CreateTestCache()
+        {
+            List<_Test> TestCache = new List<_Test>();
+            try
+            {
+                var dynamoConfig = new AmazonDynamoDBConfig(); 
+                dynamoConfig.RegionEndpoint=Amazon.RegionEndpoint.USWest2;
+                using (var dynamoClient = new AmazonDynamoDBClient(_dynamoCredentials, dynamoConfig))
+                {
+                    var pTable = Table.LoadTable(dynamoClient,"TestMaster");
+                    ScanFilter defScanFilter = new ScanFilter();
+                    Search dynamoSearch = pTable.Scan(defScanFilter);
+                    List<Document> documentList = new List<Document>();
+                    do
+                    {
+                        documentList=await dynamoSearch.GetNextSetAsync(default(CancellationToken));
+                        foreach(var document in documentList)
+                        {
+                            _Test _test = new _Test();
+                            try
+                            {
+                                _test=JsonConvert.DeserializeObject<_Test>(document.ToJson());
+                                TestCache.Add(_test);
+                            }
+                            catch(JsonException jEx)
+                            {
+                                _log.LogError("Json Deserialization Exception: "+jEx.Message);
+                                throw new DataAccessException("An Error Occured While Retrieving Test List From Database");
+                            }
+                        }
+                    } while(!dynamoSearch.IsDone);
+                }
+            }
+            catch (AmazonDynamoDBException dEx)
+            {
+                _log.LogError("Amazon DynamoDB Exception: "+dEx.Message);
+                throw new DataAccessException("An Error Occured While Retrieving Test List From Database"); 
+            }
+            catch (AmazonServiceException aEx)
+            {
+                _log.LogError("Amazon Service Exception: "+aEx.Message);
+                throw new DataAccessException("An Error Occured While Retrieving Test List From Database");
+            }
+            catch (AmazonClientException cEx)
+            {
+                _log.LogError("Amazon Client Exception: "+cEx.Message);
+                throw new DataAccessException("An Error Occured While Retrieving Test List From Database");
+            }
+            catch (Exception eEx)
+            {
+                _log.LogError("Unhandled Exception:  "+eEx.Message);
+                throw new DataAccessException("An Unknown Error Occured");
+            }
+            return TestCache;
+        }
+        public async Task SaveDrugAsync(string drug)
+        {
+            Document pResponse=null;
+            try
+            {
+                var dynamoConfig = new AmazonDynamoDBConfig(); 
+                dynamoConfig.RegionEndpoint=Amazon.RegionEndpoint.USWest2;
+                using (var dynamoClient = new AmazonDynamoDBClient(_dynamoCredentials, dynamoConfig))
+                {
+                    var pTable = Table.LoadTable(dynamoClient,"DrugMaster");
+                    var pItem = Document.FromJson(drug);
+                    pResponse = await pTable.PutItemAsync(pItem,default(CancellationToken));
+                }
+            }
+            catch (AmazonDynamoDBException dEx)
+            {
+                _log.LogError("Amazon DynamoDB Exception: "+dEx.Message);
+                throw new DataAccessException("An Error Occured While Saving Drug To Database"); 
+            }
+            catch (AmazonServiceException aEx)
+            {
+                _log.LogError("Amazon Service Exception: "+aEx.Message);
+                throw new DataAccessException("An Error Occured While Saving Drug To Database");
+            }
+            catch (AmazonClientException cEx)
+            {
+                _log.LogError("Amazon Client Exception: "+cEx.Message);
+                throw new DataAccessException("An Error Occured While Saving Drug To Database");
+            }
+            catch (Exception eEx)
+            {
+                _log.LogError("Unhandled Exception:  "+eEx.Message);
+                throw new DataAccessException("An Unknown Error Occured");
+            }
+            return;
+        }
+        public async Task SaveTestAsync(string test)
+        {
+            Document pResponse=null;
+            try
+            {
+                var dynamoConfig = new AmazonDynamoDBConfig(); 
+                dynamoConfig.RegionEndpoint=Amazon.RegionEndpoint.USWest2;
+                using (var dynamoClient = new AmazonDynamoDBClient(_dynamoCredentials, dynamoConfig))
+                {
+                    var pTable = Table.LoadTable(dynamoClient,"TestMaster");
+                    var pItem = Document.FromJson(test);
+                    pResponse = await pTable.PutItemAsync(pItem,default(CancellationToken));
+                }
+            }
+            catch (AmazonDynamoDBException dEx)
+            {
+                _log.LogError("Amazon DynamoDB Exception: "+dEx.Message);
+                throw new DataAccessException("An Error Occured While Saving Test To Database"); 
+            }
+            catch (AmazonServiceException aEx)
+            {
+                _log.LogError("Amazon Service Exception: "+aEx.Message);
+                throw new DataAccessException("An Error Occured While Saving Test To Database");
+            }
+            catch (AmazonClientException cEx)
+            {
+                _log.LogError("Amazon Client Exception: "+cEx.Message);
+                throw new DataAccessException("An Error Occured While Saving Test To Database");
+            }
+            catch (Exception eEx)
+            {
+                _log.LogError("Unhandled Exception:  "+eEx.Message);
+                throw new DataAccessException("An Unknown Error Occured");
+            }
+            return;
         }
     }
 }
