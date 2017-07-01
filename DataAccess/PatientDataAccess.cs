@@ -127,8 +127,30 @@ namespace WebApi_AWS_Starter.DataAccess
                     {
                         _objPatient.Name=Convert.ToString(dynamoResponse.Item["Name"].S);
                         _objPatient.ID=Convert.ToString(dynamoResponse.Item["ID"].S);
-                        _objPatient.Age=Convert.ToInt32(dynamoResponse.Item["Age"].N);
-                        _objPatient.ContactNumber=Convert.ToString(dynamoResponse.Item["ContactNumber"].S);
+                        if(dynamoResponse.Item.ContainsKey("Age"))
+                        {
+                            _objPatient.Age=Convert.ToInt32(dynamoResponse.Item["Age"].N);
+                        }
+                        if(dynamoResponse.Item.ContainsKey("ContactNumber"))
+                        {
+                            _objPatient.ContactNumber=Convert.ToString(dynamoResponse.Item["ContactNumber"].S);
+                        }
+                        if(dynamoResponse.Item.ContainsKey("Parity"))
+                        {
+                            _objPatient.Parity=Convert.ToString(dynamoResponse.Item["Parity"].S);
+                        }
+                        if(dynamoResponse.Item.ContainsKey("BloodGroup"))
+                        {
+                            _objPatient.BloodGroup=Convert.ToString(dynamoResponse.Item["BloodGroup"].S);
+                        }
+                        if(dynamoResponse.Item.ContainsKey("Title"))
+                        {
+                            _objPatient.Title=Convert.ToString(dynamoResponse.Item["Title"].S);
+                        }
+                        if(dynamoResponse.Item.ContainsKey("Email"))
+                        {
+                            _objPatient.Email=Convert.ToString(dynamoResponse.Item["Email"].S);
+                        }       
                     }
                 }
             }
@@ -187,8 +209,32 @@ namespace WebApi_AWS_Starter.DataAccess
                             PatientInfo _objPatient = new PatientInfo();
                             _objPatient.Name=Convert.ToString(dynamoItem["Name"].S);
                             _objPatient.ID=Convert.ToString(dynamoItem["ID"].S);
-                            _objPatient.Age=Convert.ToInt32(dynamoItem["Age"].N);
-                            _objPatient.ContactNumber=Convert.ToString(dynamoItem["ContactNumber"].S);
+                            
+                            if(dynamoItem.ContainsKey("Age"))
+                            {
+                                _objPatient.Age=Convert.ToInt32(dynamoItem["Age"].N);
+                            }
+                            if(dynamoItem.ContainsKey("ContactNumber"))
+                            {
+                                _objPatient.ContactNumber=Convert.ToString(dynamoItem["ContactNumber"].S);
+                            }
+                            if(dynamoItem.ContainsKey("Parity"))
+                            {
+                                _objPatient.Parity=Convert.ToString(dynamoItem["Parity"].S);
+                            }
+                            if(dynamoItem.ContainsKey("BloodGroup"))
+                            {
+                                _objPatient.BloodGroup=Convert.ToString(dynamoItem["BloodGroup"].S);
+                            }
+                            if(dynamoItem.ContainsKey("Title"))
+                            {
+                                _objPatient.Title=Convert.ToString(dynamoItem["Title"].S);
+                            }
+                            if(dynamoItem.ContainsKey("Email"))
+                            {
+                                _objPatient.Email=Convert.ToString(dynamoItem["Email"].S);
+                            }
+
                             _lstPatient.Add(_objPatient);
                         }
                     }
